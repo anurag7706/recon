@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recon Engine – Advanced OSINT & Google Dork Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0f14;--bg2:#111922;--panel:#131e28;--border:#2a4a60;
+  --accent:#38d9f5;--accent2:#ff6090;--accent3:#4dff6e;
+  --text:#e8f4ff;--text2:#90b8d0;
+  --glow:0 0 18px rgba(56,217,245,0.3);--glow2:0 0 18px rgba(255,96,144,0.3);
+  --fm:'Share Tech Mono',monospace;--fu:'Rajdhani',sans-serif;--fd:'Orbitron',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f0f4f8;--bg2:#ffffff;--panel:#ffffff;--border:#88b8d8;
+  --accent:#0066bb;--accent2:#cc0044;--accent3:#007733;
+  --text:#0a1a2a;--text2:#2a5070;
+  --glow:0 0 12px rgba(0,102,187,0.2);--glow2:0 0 12px rgba(204,0,68,0.2);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--fu);min-height:100vh;transition:background .3s,color .3s}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(56,217,245,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,217,245,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+[data-theme="light"] body::before{background-image:linear-gradient(rgba(0,102,187,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,102,187,.04) 1px,transparent 1px)}
+
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:62px;background:rgba(10,15,20,.96);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);transition:background .3s}
+[data-theme="light"] nav{background:rgba(240,244,248,.96)}
+.nav-logo{font-family:var(--fd);font-size:1.1rem;color:var(--accent);letter-spacing:3px;text-shadow:var(--glow)}
+#themeBtn{background:none;border:1px solid var(--border);color:var(--text);padding:.4rem 1rem;border-radius:6px;cursor:pointer;font-size:.88rem;font-family:var(--fu);font-weight:700;letter-spacing:1px;transition:all .2s}
+#themeBtn:hover{border-color:var(--accent);color:var(--accent)}
+
+.hero{text-align:center;padding:4.5rem 1.5rem 2.5rem;position:relative;z-index:1}
+.hero h1{font-family:var(--fd);font-size:clamp(2rem,6vw,3.6rem);color:var(--accent);text-shadow:var(--glow);letter-spacing:4px;line-height:1.1;margin-bottom:1rem}
+.hero h1 span{color:var(--accent2);text-shadow:var(--glow2)}
+.hero p{color:var(--text2);font-size:1.05rem;max-width:620px;margin:0 auto 2rem;line-height:1.7;font-weight:500}
+.badges{display:flex;justify-content:center;gap:.6rem;flex-wrap:wrap;margin-bottom:2rem}
+.badge{font-family:var(--fm);font-size:.72rem;padding:.25rem .7rem;border-radius:4px;border:1px solid;letter-spacing:1px}
+.bg{border-color:var(--accent3);color:var(--accent3)}
+.bc{border-color:var(--accent);color:var(--accent)}
+.br{border-color:var(--accent2);color:var(--accent2)}
+
+main{max-width:1200px;margin:0 auto;padding:0 1.5rem 5rem;position:relative;z-index:1}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1.6rem;margin-bottom:1.5rem;transition:border-color .2s}
+.panel:hover{border-color:var(--accent)}
+.stitle{font-family:var(--fd);font-size:.88rem;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:1.3rem;display:flex;align-items:center;gap:.6rem}
+.stitle::before{content:'▶';font-size:.62rem}
+
+label{display:block;font-size:.8rem;color:var(--text);letter-spacing:1px;margin-bottom:.4rem;font-weight:700;text-transform:uppercase}
+input,select{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:.65rem 1rem;border-radius:7px;font-family:var(--fm);font-size:.9rem;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{border-color:var(--accent);box-shadow:var(--glow)}
+input::placeholder{color:var(--text2);opacity:.7}
+select option{background:var(--bg2);color:var(--text)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:680px){.g2{grid-template-columns:1fr}}
+.full{grid-column:1/-1}
+.row{display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap}
+.row .f{flex:1;min-width:200px}
+
+/* TABS */
+.tabs{display:flex;gap:.5rem;margin-bottom:1.4rem;flex-wrap:wrap}
+.tbtn{padding:.45rem 1.1rem;border-radius:6px;cursor:pointer;border:1px solid var(--border);font-size:.82rem;font-weight:700;letter-spacing:1px;color:var(--text2);background:transparent;font-family:var(--fu);transition:all .18s;text-transform:uppercase}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.tbtn.on{border-color:var(--accent);color:var(--accent);background:rgba(56,217,245,.09)}
+.pane{display:none}
+.pane.on{display:block}
+
+.outbox{background:var(--bg2);border:2px solid var(--border);border-radius:8px;padding:1rem 1.2rem;font-family:var(--fm);font-size:.95rem;color:var(--text2);word-break:break-all;min-height:54px;line-height:1.6;transition:all .2s;margin-top:.8rem}
+.outbox.lit{border-color:var(--accent);color:var(--accent);background:rgba(56,217,245,.04);box-shadow:var(--glow)}
+
+.brow{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1rem}
+.btn{padding:.55rem 1.3rem;border-radius:7px;cursor:pointer;font-family:var(--fu);font-weight:700;font-size:.88rem;letter-spacing:1px;border:2px solid;transition:all .18s;text-transform:uppercase;display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap}
+.bp{background:var(--accent);border-color:var(--accent);color:#0a0f14}
+.bp:hover{background:transparent;color:var(--accent);box-shadow:var(--glow)}
+.bo{background:transparent;border-color:var(--border);color:var(--text)}
+.bo:hover{border-color:var(--accent);color:var(--accent)}
+.br2{background:transparent;border-color:var(--accent2);color:var(--accent2)}
+.br2:hover{background:var(--accent2);color:#fff}
+.bg2c{background:transparent;border-color:var(--accent3);color:var(--accent3)}
+.bg2c:hover{background:var(--accent3);color:#0a0f14}
+
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.8rem;margin-top:.5rem}
+.dc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;cursor:pointer;transition:all .18s}
+.dc:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--glow)}
+.dcat{font-size:.62rem;color:var(--accent2);letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem;font-weight:700}
+.dtitle{font-size:.88rem;color:var(--text);font-weight:700;margin-bottom:.3rem}
+.ddork{font-family:var(--fm);font-size:.7rem;color:var(--text2);line-height:1.4;word-break:break-word}
+
+.ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1rem;margin-top:1rem}
+.oc{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:1.1rem;transition:all .18s}
+.oc:hover{border-color:var(--accent);box-shadow:var(--glow)}
+.oname{font-family:var(--fd);font-size:.7rem;color:var(--accent);letter-spacing:2px;margin-bottom:.45rem;font-weight:700}
+.odesc{font-size:.83rem;color:var(--text2);margin-bottom:.8rem;line-height:1.5}
+.olink{display:block;font-family:var(--fm);font-size:.73rem;padding:.35rem .7rem;border:1px solid var(--border);border-radius:5px;color:var(--text);transition:all .18s;word-break:break-all;background:var(--panel)}
+.olink:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+
+.vtbox{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:1.2rem;margin-top:1rem}
+.vtrow{display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border);gap:1rem}
+.vtrow:last-child{border-bottom:none}
+.vtk{font-family:var(--fm);font-size:.82rem;color:var(--text2);min-width:130px;flex-shrink:0}
+.vtv{font-family:var(--fm);font-size:.82rem;color:var(--text);font-weight:700;word-break:break-all;text-align:right}
+.ok{color:var(--accent3) !important}
+
+.hlist{max-height:200px;overflow-y:auto}
+.hi{display:flex;justify-content:space-between;align-items:center;padding:.45rem .7rem;border-radius:5px;cursor:pointer;font-family:var(--fm);font-size:.8rem;color:var(--text2);transition:background .15s;border-bottom:1px solid var(--border)}
+.hi:hover{background:rgba(56,217,245,.05);color:var(--accent)}
+.hdel{color:var(--accent2);padding:0 .3rem;cursor:pointer;opacity:.6;font-size:.8rem;flex-shrink:0}
+.hdel:hover{opacity:1}
+.empty{text-align:center;color:var(--text2);font-size:.82rem;padding:1.2rem;font-family:var(--fm)}
+
+#toast{position:fixed;bottom:1.8rem;right:1.8rem;z-index:9999;background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:.65rem 1.2rem;font-family:var(--fm);font-size:.85rem;color:var(--accent);box-shadow:var(--glow);opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+footer{text-align:center;padding:2rem 1.5rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--text2);font-family:var(--fm);position:relative;z-index:1}
+footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">⚡ RECON ENGINE</div>
+  <button id="themeBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+</nav>
+
+<div class="hero">
+  <h1>RECON <span>ENGINE</span></h1>
+  <p>Advanced Google Dork Generator &amp; OSINT Recon Platform — generate precise search queries, analyze domains with VirusTotal, Web Archive, URLScan, OTX AlienVault, Censys and more.</p>
+  <div class="badges">
+    <span class="badge bg">✓ Client-Side</span>
+    <span class="badge bc">⚡ 150+ Dork Templates</span>
+    <span class="badge br">🔒 Authorized Use Only</span>
+    <span class="badge bc">🌐 Multi-Source OSINT</span>
+    <span class="badge bg">🛡️ VirusTotal Integration</span>
+  </div>
+</div>
+
+<main>
+
+<!-- DORK BUILDER -->
+<div class="panel">
+  <div class="stitle">Google Dork Builder</div>
+
+  <div class="tabs">
+    <button class="tbtn on" id="t-custom" onclick="showTab('custom')">Custom Builder</button>
+    <button class="tbtn" id="t-quick"  onclick="showTab('quick')">Quick Templates</button>
+    <button class="tbtn" id="t-recon"  onclick="showTab('recon')">Domain Recon</button>
+  </div>
+
+  <!-- CUSTOM -->
+  <div class="pane on" id="p-custom">
+    <div class="g2">
+      <div>
+        <label>Target Domain (site:)</label>
+        <input type="text" id="b-site" placeholder="example.com">
+      </div>
+      <div>
+        <label>File Type (filetype:)</label>
+        <select id="b-ft">
+          <option value="">— Any —</option>
+          <option>pdf</option><option>xls</option><option>doc</option>
+          <option>sql</option><option>txt</option><option>xml</option>
+          <option>json</option><option>csv</option><option>log</option>
+          <option>bak</option><option>env</option><option>config</option>
+          <option>php</option><option>asp</option><option>jsp</option>
+        </select>
+      </div>
+      <div>
+        <label>In URL (inurl:)</label>
+        <input type="text" id="b-inurl" placeholder="login, admin, config...">
+      </div>
+      <div>
+        <label>In Title (intitle:)</label>
+        <input type="text" id="b-intitle" placeholder="index of, dashboard...">
+      </div>
+      <div>
+        <label>In Text (intext:)</label>
+        <input type="text" id="b-intext" placeholder="password, api_key...">
+      </div>
+      <div>
+        <label>Exclude URL (-inurl:)</label>
+        <input type="text" id="b-excl" placeholder="public, docs...">
+      </div>
+      <div class="full">
+        <label>Extra Keywords</label>
+        <input type="text" id="b-kw" placeholder="additional search terms...">
+      </div>
+      <div class="full">
+        <label>Quick Operator</label>
+        <select id="b-extra">
+          <option value="">— None —</option>
+          <option value='intitle:"index of"'>Directory Listing</option>
+          <option value='inurl:".git"'>Exposed .git</option>
+          <option value='inurl:".env"'>ENV Files</option>
+          <option value='intitle:"phpMyAdmin"'>phpMyAdmin Panel</option>
+          <option value='intext:"DB_PASSWORD"'>DB Password in Code</option>
+          <option value='inurl:"wp-content/uploads"'>WordPress Uploads</option>
+          <option value='inurl:"api_key" OR inurl:"apikey"'>API Key in URL</option>
+          <option value='intitle:"Admin Panel"'>Admin Panels</option>
+          <option value='intext:"sql syntax near"'>SQL Errors</option>
+          <option value='inurl:"backup" filetype:zip'>Backup ZIP Files</option>
+          <option value='intext:"BEGIN RSA PRIVATE KEY"'>Exposed Private Keys</option>
+          <option value='inurl:"s3.amazonaws.com"'>S3 Bucket</option>
+          <option value='intitle:"Kibana"'>Kibana Dashboard</option>
+          <option value='intitle:"Grafana"'>Grafana Dashboard</option>
+          <option value='inurl:"jenkins"'>Jenkins CI</option>
+        </select>
+      </div>
+    </div>
+    <label style="margin-top:1.2rem">Generated Dork Query</label>
+    <div class="outbox" id="outbox">← Fill fields above and click Generate</div>
+    <div class="brow">
+      <button class="btn bp" onclick="genDork()">⚡ Generate</button>
+      <button class="btn bo" onclick="copyDork()">📋 Copy</button>
+      <button class="btn bg2c" onclick="goGoogle()">🔍 Google</button>
+      <button class="btn bo" onclick="goBing()">🔎 Bing</button>
+      <button class="btn br2" onclick="clearB()">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- QUICK TEMPLATES -->
+  <div class="pane" id="p-quick">
+    <div style="margin-bottom:1rem">
+      <label>Filter by Domain (optional)</label>
+      <input type="text" id="q-dom" placeholder="example.com — leave blank for generic" oninput="renderQuick()">
+    </div>
+    <div class="cgrid" id="quickCards"></div>
+  </div>
+
+  <!-- DOMAIN RECON -->
+  <div class="pane" id="p-recon">
+    <div class="row" style="margin-bottom:1rem">
+      <div class="f">
+        <label>Target Domain</label>
+        <input type="text" id="r-dom" placeholder="example.com">
+      </div>
+      <button class="btn bp" onclick="genRecon()">⚡ Generate All Recon Dorks</button>
+    </div>
+    <div class="cgrid" id="reconCards"></div>
+  </div>
+</div>
+
+<!-- OSINT MULTI-SOURCE -->
+<div class="panel">
+  <div class="stitle">OSINT Multi-Source Lookup</div>
+  <p style="font-size:.88rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6">Enter a domain or IP to instantly generate lookup links across all major OSINT platforms.</p>
+  <div class="row">
+    <div class="f">
+      <label>Domain / IP / Hash</label>
+      <input type="text" id="osint-t" placeholder="example.com or 8.8.8.8">
+    </div>
+    <button class="btn bp" onclick="doOSINT()">🌐 Generate Links</button>
+    <button class="btn bo" onclick="openAll()">↗ Open All Tabs</button>
+  </div>
+  <div class="ogrid" id="osintGrid"></div>
+</div>
+
+<!-- VIRUSTOTAL -->
+<div class="panel">
+  <div class="stitle">VirusTotal Domain Analysis</div>
+  <p style="font-size:.88rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6">Enter a domain to open the VirusTotal API report in a new tab — shows detected/undetected URLs, threat categories, subdomains and IP resolutions.</p>
+  <div class="row" style="margin-bottom:.5rem">
+    <div class="f">
+      <label>Domain to Analyze</label>
+      <input type="text" id="vt-dom" placeholder="example.com">
+    </div>
+    <button class="btn bp" onclick="openVT()">🛡️ Open VT API Report</button>
+    <button class="btn bo" onclick="openVTgui()">🖥️ Open VT GUI</button>
+  </div>
+  <div id="vtInfo"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="panel">
+  <div class="stitle" style="justify-content:space-between">
+    <span>Search History</span>
+    <button class="btn br2" style="font-size:.75rem;padding:.3rem .8rem" onclick="clearHist()">✕ Clear All</button>
+  </div>
+  <div class="hlist" id="histEl"></div>
+</div>
+
+</main>
+
+<footer>
+  <div style="font-family:var(--fd);font-size:.9rem;color:var(--accent);margin-bottom:.5rem">⚡ RECON ENGINE</div>
+  <div>Advanced OSINT &amp; Google Dork Platform — For authorized security research only.</div>
+  <div style="margin-top:.4rem">Contact: <a href="mailto:anurag7706@gmail.com">anurag7706@gmail.com</a></div>
+  <div style="margin-top:.3rem;font-size:.7rem;opacity:.5">Using dorks is legal. Unauthorized access is not. Use responsibly.</div>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+var VT_KEY = '5a6041a927876d0ab05e627cb85b5046f3bf1c3b4ed3b5c6fe2f54f3235bd8bd';
+var osintLinks = [];
+
+/* ── THEME ── */
+function toggleTheme() {
+  var h = document.documentElement;
+  var light = h.getAttribute('data-theme') === 'light';
+  h.setAttribute('data-theme', light ? 'dark' : 'light');
+  document.getElementById('themeBtn').textContent = light ? '☀️ Light Mode' : '🌙 Dark Mode';
+}
+
+/* ── TOAST ── */
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+
+/* ── TABS ── */
+function showTab(id) {
+  var tabs = ['custom','quick','recon'];
+  for (var i = 0; i < tabs.length; i++) {
+    document.getElementById('p-' + tabs[i]).classList.remove('on');
+    document.getElementById('t-' + tabs[i]).classList.remove('on');
+  }
+  document.getElementById('p-' + id).classList.add('on');
+  document.getElementById('t-' + id).classList.add('on');
+  if (id === 'quick') renderQuick();
+}
+
+/* ── DORK BUILDER ── */
+function genDork() {
+  var site   = document.getElementById('b-site').value.trim();
+  var ft     = document.getElementById('b-ft').value;
+  var inurl  = document.getElementById('b-inurl').value.trim();
+  var intitle= document.getElementById('b-intitle').value.trim();
+  var intext = document.getElementById('b-intext').value.trim();
+  var excl   = document.getElementById('b-excl').value.trim();
+  var kw     = document.getElementById('b-kw').value.trim();
+  var extra  = document.getElementById('b-extra').value;
+  var q = '';
+  if (site)     q += 'site:' + site + ' ';
+  if (ft)       q += 'filetype:' + ft + ' ';
+  if (inurl)    q += 'inurl:' + inurl + ' ';
+  if (intitle)  q += 'intitle:"' + intitle + '" ';
+  if (intext)   q += 'intext:"' + intext + '" ';
+  if (excl)     q += '-inurl:' + excl + ' ';
+  if (kw)       q += kw + ' ';
+  if (extra)    q += extra + ' ';
+  q = q.trim();
+  if (!q) { toast('⚠️ Fill at least one field!'); return; }
+  var box = document.getElementById('outbox');
+  box.textContent = q;
+  box.classList.add('lit');
+  saveHist(q);
+  toast('✅ Dork generated!');
+}
+
+function copyDork() {
+  var t = document.getElementById('outbox').textContent;
+  if (!t || t.charAt(0) === '←') { toast('⚠️ Generate a dork first!'); return; }
+  navigator.clipboard.writeText(t).then(function(){ toast('📋 Copied!'); });
+}
+
+function goGoogle() {
+  var t = document.getElementById('outbox').textContent;
+  if (!t || t.charAt(0) === '←') { toast('⚠️ Generate a dork first!'); return; }
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(t), '_blank');
+}
+
+function goBing() {
+  var t = document.getElementById('outbox').textContent;
+  if (!t || t.charAt(0) === '←') { toast('⚠️ Generate a dork first!'); return; }
+  window.open('https://www.bing.com/search?q=' + encodeURIComponent(t), '_blank');
+}
+
+function clearB() {
+  ['b-site','b-inurl','b-intitle','b-intext','b-excl','b-kw'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('b-ft').selectedIndex = 0;
+  document.getElementById('b-extra').selectedIndex = 0;
+  var box = document.getElementById('outbox');
+  box.textContent = '← Fill fields above and click Generate';
+  box.classList.remove('lit');
+}
+
+/* ── QUICK TEMPLATES ── */
+var TPLS = [
+  ['SENSITIVE FILES','Exposed SQL Files','filetype:sql intext:password'],
+  ['SENSITIVE FILES','ENV Credentials','filetype:env intext:DB_PASSWORD'],
+  ['SENSITIVE FILES','Backup Archives','inurl:backup filetype:zip OR filetype:tar'],
+  ['SENSITIVE FILES','Log Files','filetype:log intext:username'],
+  ['SENSITIVE FILES','Config Files','filetype:config intext:password'],
+  ['SENSITIVE FILES','Private Keys','intext:"BEGIN RSA PRIVATE KEY"'],
+  ['ADMIN PANELS','Admin Login Pages','inurl:admin intitle:"Login"'],
+  ['ADMIN PANELS','phpMyAdmin','intitle:"phpMyAdmin" inurl:phpmyadmin'],
+  ['ADMIN PANELS','cPanel Login','intitle:"cPanel" inurl:2082'],
+  ['ADMIN PANELS','Webmin Panel','intitle:"Webmin" inurl:10000'],
+  ['DIRECTORIES','Open Directories','intitle:"index of" -html -htm -php'],
+  ['DIRECTORIES','FTP Directories','intitle:"index of" inurl:ftp'],
+  ['DIRECTORIES','Backup Folders','intitle:"index of" inurl:backup'],
+  ['API / KEYS','API Keys in URLs','inurl:"api_key=" OR inurl:"apikey="'],
+  ['API / KEYS','AWS Keys','intext:"AKID" intext:"secret_access_key"'],
+  ['API / KEYS','Google API Key','intext:"AIzaSy" inurl:config'],
+  ['CLOUD','S3 Buckets','inurl:"s3.amazonaws.com" intitle:"index of"'],
+  ['CLOUD','Azure Blobs','inurl:"blob.core.windows.net"'],
+  ['ERRORS','SQL Errors','intext:"sql syntax near" OR intext:"mysql_fetch"'],
+  ['ERRORS','PHP Errors','intext:"PHP Parse error" OR intext:"PHP Warning"'],
+  ['MONITORING','Grafana Dashboards','intitle:"Grafana" inurl:3000'],
+  ['MONITORING','Kibana','intitle:"Kibana" inurl:5601'],
+  ['MONITORING','Jenkins CI','intitle:"Dashboard [Jenkins]"'],
+  ['WORDPRESS','WP Login','inurl:wp-login.php'],
+  ['WORDPRESS','WP Config Backup','inurl:wp-config.php.bak'],
+  ['CAMERAS','Open IP Cameras','inurl:"view/index.shtml"'],
+  ['DOCUMENTS','Confidential PDFs','filetype:pdf intitle:"confidential"'],
+  ['DOCUMENTS','Excel Passwords','filetype:xls intext:password'],
+  ['DOCUMENTS','Leaked Word Docs','filetype:doc intext:"not for distribution"'],
+];
+
+function renderQuick() {
+  var dom = document.getElementById('q-dom').value.trim();
+  var html = '';
+  for (var i = 0; i < TPLS.length; i++) {
+    var cat = TPLS[i][0], title = TPLS[i][1], dork = TPLS[i][2];
+    if (dom) dork = 'site:' + dom + ' ' + dork;
+    var enc = encodeURIComponent(dork);
+    html += '<div class="dc" onclick="loadTpl(\'' + enc + '\')">'
+          + '<div class="dcat">' + cat + '</div>'
+          + '<div class="dtitle">' + title + '</div>'
+          + '<div class="ddork">' + dork + '</div>'
+          + '</div>';
+  }
+  document.getElementById('quickCards').innerHTML = html;
+}
+
+function loadTpl(enc) {
+  var dork = decodeURIComponent(enc);
+  var box = document.getElementById('outbox');
+  box.textContent = dork;
+  box.classList.add('lit');
+  showTab('custom');
+  saveHist(dork);
+  toast('✅ Template loaded!');
+}
+
+/* ── DOMAIN RECON ── */
+var RECON = [
+  ['All Subdomains',      'site:{d} -www'],
+  ['Open Directories',    'site:{d} intitle:"index of"'],
+  ['Login Pages',         'site:{d} inurl:login OR inurl:signin'],
+  ['Admin Panels',        'site:{d} inurl:admin OR inurl:administrator'],
+  ['Config / ENV Files',  'site:{d} filetype:env OR filetype:config'],
+  ['SQL Dump Files',      'site:{d} filetype:sql'],
+  ['Backup Files',        'site:{d} filetype:zip OR filetype:bak OR filetype:tar'],
+  ['PDF Documents',       'site:{d} filetype:pdf'],
+  ['Excel / CSV Data',    'site:{d} filetype:xls OR filetype:csv'],
+  ['API Endpoints',       'site:{d} inurl:api OR inurl:v1 OR inurl:v2'],
+  ['Exposed .git',        'site:{d} inurl:.git'],
+  ['PHP Errors',          'site:{d} intext:"PHP Warning" OR intext:"PHP Fatal"'],
+  ['SQL Errors',          'site:{d} intext:"mysql_fetch" OR intext:"ORA-0"'],
+  ['Passwords in Files',  'site:{d} intext:password filetype:txt OR filetype:log'],
+  ['AWS / Cloud Keys',    'site:{d} intext:"AKID" OR intext:"aws_secret"'],
+  ['Email Addresses',     'site:{d} intext:"@{d}"'],
+];
+
+function genRecon() {
+  var d = document.getElementById('r-dom').value.trim();
+  if (!d) { toast('⚠️ Enter a domain!'); return; }
+  var html = '';
+  for (var i = 0; i < RECON.length; i++) {
+    var title = RECON[i][0];
+    var dork = RECON[i][1].replace(/{d}/g, d);
+    var gurl = 'https://www.google.com/search?q=' + encodeURIComponent(dork);
+    html += '<div class="dc" onclick="window.open(\'' + gurl + '\',\'_blank\')">'
+          + '<div class="dcat">DOMAIN RECON</div>'
+          + '<div class="dtitle">' + title + '</div>'
+          + '<div class="ddork">' + dork + '</div>'
+          + '</div>';
+  }
+  document.getElementById('reconCards').innerHTML = html;
+  saveHist('[RECON] ' + d);
+  toast('✅ ' + RECON.length + ' recon dorks generated for ' + d);
+}
+
+/* ── OSINT ── */
+function buildSources(t) {
+  return [
+    ['🛡️ VirusTotal',     'Domain reputation, malware scan, detected/undetected URLs.',
+     'https://www.virustotal.com/vtapi/v2/domain/report?apikey=' + VT_KEY + '&domain=' + t],
+    ['📚 Web Archive',    'Historical snapshots via Wayback Machine.',
+     'https://web.archive.org/web/*/' + t],
+    ['🔬 URLScan.io',     'Analyze URLs for malicious behavior and page content.',
+     'https://urlscan.io/search/#domain:' + t],
+    ['👾 OTX AlienVault', 'Open Threat Exchange — IOCs and threat intelligence.',
+     'https://otx.alienvault.com/indicator/domain/' + t],
+    ['🌐 Shodan',         'Internet-wide port scanning and exposed services.',
+     'https://www.shodan.io/search?query=' + t],
+    ['🔭 Censys',         'TLS certificates, hosts and services search.',
+     'https://platform.censys.io/search?q=' + encodeURIComponent('"' + t + '"')],
+    ['🗺️ SecurityTrails', 'DNS history, subdomains and WHOIS data.',
+     'https://securitytrails.com/domain/' + t + '/dns'],
+    ['🔏 crt.sh',         'Certificate transparency — find subdomains via SSL certs.',
+     'https://crt.sh/?q=%25.' + t],
+    ['📡 DNSDumpster',    'DNS recon and subdomain enumeration.',
+     'https://dnsdumpster.com/'],
+    ['📧 Hunter.io',      'Find email addresses associated with the domain.',
+     'https://hunter.io/search/' + t],
+    ['📋 WHOIS Lookup',   'Domain registration and ownership info.',
+     'https://www.whois.com/whois/' + t],
+    ['🔍 Google Dork',    'Quick Google site: recon dork for this target.',
+     'https://www.google.com/search?q=site:' + t],
+  ];
+}
+
+function doOSINT() {
+  var t = document.getElementById('osint-t').value.trim();
+  if (!t) { toast('⚠️ Enter a domain or IP!'); return; }
+  osintLinks = buildSources(t);
+  var html = '';
+  for (var i = 0; i < osintLinks.length; i++) {
+    var name = osintLinks[i][0], desc = osintLinks[i][1], url = osintLinks[i][2];
+    var short = url.length > 60 ? url.slice(0, 60) + '…' : url;
+    html += '<div class="oc">'
+          + '<div class="oname">' + name + '</div>'
+          + '<div class="odesc">' + desc + '</div>'
+          + '<a class="olink" href="' + url + '" target="_blank" rel="noopener">' + short + '</a>'
+          + '</div>';
+  }
+  document.getElementById('osintGrid').innerHTML = html;
+  saveHist('[OSINT] ' + t);
+  toast('✅ ' + osintLinks.length + ' OSINT links generated!');
+}
+
+function openAll() {
+  if (!osintLinks.length) { toast('⚠️ Generate OSINT links first!'); return; }
+  for (var i = 0; i < osintLinks.length; i++) {
+    (function(url, delay){
+      setTimeout(function(){ window.open(url, '_blank'); }, delay);
+    })(osintLinks[i][2], i * 250);
+  }
+  toast('↗ Opening ' + osintLinks.length + ' tabs...');
+}
+
+/* ── VIRUSTOTAL ── */
+function openVT() {
+  var d = document.getElementById('vt-dom').value.trim();
+  if (!d) { toast('⚠️ Enter a domain!'); return; }
+  var url = 'https://www.virustotal.com/vtapi/v2/domain/report?apikey=' + VT_KEY + '&domain=' + encodeURIComponent(d);
+  window.open(url, '_blank');
+  document.getElementById('vtInfo').innerHTML =
+    '<div class="vtbox">'
+    + '<div class="vtrow"><span class="vtk">Domain</span><span class="vtv">' + d + '</span></div>'
+    + '<div class="vtrow"><span class="vtk">Full API URL</span><span class="vtv" style="font-size:.7rem">' + url + '</span></div>'
+    + '<div class="vtrow"><span class="vtk">Status</span><span class="vtv ok">✅ Opened in new tab ↗</span></div>'
+    + '</div>';
+  saveHist('[VT] ' + d);
+  toast('✅ VT report opened in new tab!');
+}
+
+function openVTgui() {
+  var d = document.getElementById('vt-dom').value.trim();
+  if (!d) { toast('⚠️ Enter a domain!'); return; }
+  window.open('https://www.virustotal.com/gui/domain/' + encodeURIComponent(d), '_blank');
+  toast('✅ VT GUI opened!');
+}
+
+/* ── HISTORY ── */
+function saveHist(q) {
+  var h = JSON.parse(localStorage.getItem('recon_h') || '[]');
+  h = h.filter(function(x){ return x !== q; });
+  h.unshift(q);
+  if (h.length > 50) h = h.slice(0, 50);
+  localStorage.setItem('recon_h', JSON.stringify(h));
+  renderHist();
+}
+
+function renderHist() {
+  var h = JSON.parse(localStorage.getItem('recon_h') || '[]');
+  var el = document.getElementById('histEl');
+  if (!h.length) {
+    el.innerHTML = '<div class="empty">No history yet — generate some dorks or run OSINT!</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < h.length; i++) {
+    html += '<div class="hi" onclick="loadHist(\'' + encodeURIComponent(h[i]) + '\')">'
+          + '<span>' + h[i] + '</span>'
+          + '<span class="hdel" onclick="event.stopPropagation();delHist(' + i + ')">✕</span>'
+          + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function loadHist(enc) {
+  var q = decodeURIComponent(enc);
+  var box = document.getElementById('outbox');
+  box.textContent = q;
+  box.classList.add('lit');
+  showTab('custom');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('✅ Loaded from history!');
+}
+
+function delHist(i) {
+  var h = JSON.parse(localStorage.getItem('recon_h') || '[]');
+  h.splice(i, 1);
+  localStorage.setItem('recon_h', JSON.stringify(h));
+  renderHist();
+}
+
+function clearHist() {
+  localStorage.removeItem('recon_h');
+  renderHist();
+  toast('🗑️ History cleared!');
+}
+
+/* ── INIT ── */
+renderHist();
+renderQuick();
+</script>
+</body>
+</html>
